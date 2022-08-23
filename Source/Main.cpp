@@ -45,7 +45,7 @@ namespace wtc
 
                     auto sample = func(x, i);
 
-                    if (std::isnan(samples[s]) || std::isinf(samples[s]))
+                    if (std::isnan(sample) || std::isinf(sample))
                         sample = 0.f;
 
                     samples[s] = sample;
@@ -147,17 +147,29 @@ int main (int, char*)
     using namespace wtc;
 
     const int tableSize = 2048;
-    const int numTables = 128;
+    const int numTables = 256;
 
-    TableFunc func = [](float x, int tableIdx)
+    TableFunc func = [numTables](float x, int tableIdx)
     {
-        const auto N = static_cast<float>(tableIdx + 1);
+        auto p = (float)tableIdx / numTables;
 
-        auto sum = 0.f;
-        for (auto n = 1.f; n <= N; ++n)
-            sum += std::sin(n * pi * (x + n / N)) / n;
-            
-        return sum;
+        auto a = std::rint(256.f * p);
+
+        auto S = [](float x, float N, float M)
+        {
+            auto sum = 0.f;
+			for (auto n = 1.f; n < N; ++n)
+                sum += std::sin(M * n * x * pi) / (n * pi);
+
+            return sum / M;
+        };
+
+        std::array<float, 8> fib =
+        {
+			1.f, 1.f, 2.f, 3.f, 5.f, 8.f, 13.f, 21.f
+		};
+		
+		return S(x, a, fib[1]) * S(x, a, fib[5]) + S(x, a, fib[3]) * S(x, a, fib[2]);
     };
 
     Creator creator(tableSize, numTables, func);
@@ -165,7 +177,7 @@ int main (int, char*)
     creator.dcOffsetEachTable();
     creator.normalizeEachTable();
     
-    creator.makeWav("anaSawPhaseReso128");
+    creator.makeWav("analogSawFibMulti");
 
     return 0;
 }
